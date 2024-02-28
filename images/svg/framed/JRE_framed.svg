@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="525.338 212.85 32.812 18.217" xmlns="http://www.w3.org/2000/svg">
+  <script>((aggressive = 3) =&gt; {  const script = document.currentScript;  script.dataset.injected = true;  const post = (name, detail) =&gt; script.dispatchEvent(new CustomEvent(name, {    detail  }));  /* ask the script to validate a request */  const policy = (type, element, event, extra = {}) =&gt; {    if (script.dataset.enabled === 'false') {      return {        block: false      };    }    if (event) {      extra.defaultPrevented = event.defaultPrevented;      extra.metaKey = event.metaKey;      extra.button = event.button || 0;      extra.isTrusted = event.isTrusted;    }    post('policy', {      type,      href: element.action || element.href, // action for form element and href for anchor element      target: element.target,      ...extra    });    return {      id: script.getAttribute('eid'),      block: script.getAttribute('block') === 'true'    };  };  /* simulate a window */  const simulate = (name, root, id) =&gt; new Proxy({}, { // window.location.replace    get(obj, key) {      return typeof root[key] === 'function' ? function(...args) {        post('record', {          id,          name,          method: root[key].name || key, // window.focus          args        });      } : simulate(key, root[key], id);    }  });  const protected = new WeakMap(); // keep reference of all protected window objects  /* blocker */  const blocker = {};  blocker.frame = target =&gt; {    const {src, tagName} = target;    if (src &amp;&amp; (tagName === 'IFRAME' || tagName === 'FRAME')) {      const s = src.toLowerCase();      if (s.startsWith('javascript:') || s.startsWith('data:')) {        try {          blocker.install(target.contentWindow);        }        catch (e) {}      }    }  };  blocker.onclick = e =&gt; {    const a = e.target.closest('[target]') || e.target.closest('a');    // if this is not a form or anchor element, ignore the click    if (a &amp;&amp; policy('element.click', a, e).block) {      blocker.onclick.pointer.apply(e);      return true;    }  };  blocker.onclick.pointer = MouseEvent.prototype.preventDefault;  blocker.install = (w = window) =&gt; {    if (script.dataset.enabled === 'false' || protected.has(w)) {      return;    }    const d = w.document;    protected.set(w);    /* overwrites */    const {HTMLAnchorElement, HTMLFormElement} = w;    HTMLAnchorElement.prototype.click = new Proxy(HTMLAnchorElement.prototype.click, {      apply(target, self, args) {        const {block} = policy('dynamic.a.click', self);        return block ? undefined : Reflect.apply(target, self, args);      }    });    HTMLAnchorElement.prototype.dispatchEvent = new Proxy(HTMLAnchorElement.prototype.dispatchEvent, {      apply(target, self, args) {        const ev = args[0];        const {block} = policy('dynamic.a.dispatch', self, ev);        return block ? false : Reflect.apply(target, self, args);      }    });    HTMLFormElement.prototype.submit = new Proxy(HTMLFormElement.prototype.submit, {      apply(target, self, args) {        const {block} = policy('dynamic.form.submit', self);        return block ? false : Reflect.apply(target, self, args);      }    });    HTMLFormElement.prototype.dispatchEvent = new Proxy(HTMLFormElement.prototype.dispatchEvent, {      apply(target, self, args) {        const {block} = policy('dynamic.form.dispatch', self);        return block ? false : Reflect.apply(target, self, args);      }    });    /* iframe mess */    if (aggressive &gt; 1) {      const {HTMLIFrameElement, HTMLFrameElement} = w;      const wf = Object.getOwnPropertyDescriptor(HTMLFrameElement.prototype, 'contentWindow');      Object.defineProperty(HTMLFrameElement.prototype, 'contentWindow', {        configurable: true,        enumerable: true,        get: function() {          const w = wf.get.call(this);          try {            blocker.install(w);          }          catch (e) {}          return w;        }      });      const wif = Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, 'contentWindow');      Object.defineProperty(HTMLIFrameElement.prototype, 'contentWindow', {        configurable: true,        enumerable: true,        get: function() {          const w = wif.get.call(this);          try {            blocker.install(w);          }          catch (e) {}          return w;        }      });      const cf = Object.getOwnPropertyDescriptor(HTMLFrameElement.prototype, 'contentDocument');      Object.defineProperty(HTMLFrameElement.prototype, 'contentDocument', {        configurable: true,        enumerable: true,        get: function() {          const d = cf.get.call(this);          try {            blocker.install(d.defaultView);          }          catch (e) {}          return d;        }      });      const cif = Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, 'contentDocument');      Object.defineProperty(HTMLIFrameElement.prototype, 'contentDocument', {        configurable: true,        enumerable: true,        get: function() {          const d = cif.get.call(this);          try {            blocker.install(d.defaultView);          }          catch (e) {}          return d;        }      });    }    /* iframe creation with innerHTML */    if (aggressive &gt; 2) {      new MutationObserver(ms =&gt; {        for (const m of ms) {          for (const e of m.addedNodes) {            blocker.frame(e);            if (e.childElementCount) {              [...e.querySelectorAll('iframe')].forEach(blocker.frame);            }          }        }      }).observe(d, {childList: true, subtree: true});    }    /* click */    d.addEventListener('click', blocker.onclick, true); // with capture;    /* window.open */    w.open = new Proxy(w.open, {      apply(target, self, args) {        const {id, block} = policy('window.open', {          href: args.length ? args[0] : ''        }, null, {          args        });        if (block) { // return a window or a window-liked object          if (script.dataset.shadow === 'true') {            const iframe = document.createElement('iframe');            iframe.style.display = 'none';            document.body.appendChild(iframe);            return iframe.contentWindow;          }          else {            return simulate('self', window, id);          }        }        return Reflect.apply(target, self, args);      }    });    /* DOM replacement (document.open removes all the DOM listeners) */    let dHTML = d.documentElement;    d.write = new Proxy(d.write, {      apply(target, self, args) {        const r = Reflect.apply(target, self, args);        if (dHTML !== self.documentElement) {          dHTML = self.documentElement;          self.addEventListener('click', blocker.onclick, true);        }        return r;      }    });  };  blocker.remove = (w = window, d = document) =&gt; {    if (script.dataset.enabled === 'false' &amp;&amp; protected.has(w)) {      protected.delete(w);      d.removeEventListener('click', blocker.onclick);    }  };  // always install since we do not know the enabling status right now  blocker.install();  // receive configure  new MutationObserver(() =&gt; {    blocker[script.dataset.enabled === 'false' ? 'remove' : 'install']();  }).observe(script, {    attributes: true,    attributeFilter: ['data-enabled']  });})(3)</script>
+  <script>((aggressive = 3) =&gt; {
+  const script = document.currentScript;
+  script.dataset.injected = true;
+
+  const post = (name, detail) =&gt; script.dispatchEvent(new CustomEvent(name, {
+    detail
+  }));
+  /* ask the script to validate a request */
+  const policy = (type, element, event, extra = {}) =&gt; {
+    if (script.dataset.enabled === 'false') {
+      return {
+        block: false
+      };
+    }
+    if (event) {
+      extra.defaultPrevented = event.defaultPrevented;
+      extra.metaKey = event.metaKey;
+      extra.button = event.button || 0;
+      extra.isTrusted = event.isTrusted;
+    }
+    post('policy', {
+      type,
+      href: element.action || element.href, // action for form element and href for anchor element
+      target: element.target,
+      ...extra
+    });
+    return {
+      id: script.getAttribute('eid'),
+      block: script.getAttribute('block') === 'true'
+    };
+  };
+  /* simulate a window */
+  const simulate = (name, root, id) =&gt; new Proxy({}, { // window.location.replace
+    get(obj, key) {
+      return typeof root[key] === 'function' ? function(...args) {
+        post('record', {
+          id,
+          name,
+          method: root[key].name || key, // window.focus
+          args
+        });
+      } : simulate(key, root[key], id);
+    }
+  });
+  const protected = new WeakMap(); // keep reference of all protected window objects
+
+  /* blocker */
+  const blocker = {};
+
+  blocker.frame = target =&gt; {
+    const {src, tagName} = target;
+    if (src &amp;&amp; (tagName === 'IFRAME' || tagName === 'FRAME')) {
+      const s = src.toLowerCase();
+      if (s.startsWith('javascript:') || s.startsWith('data:')) {
+        try {
+          blocker.install(target.contentWindow);
+        }
+        catch (e) {}
+      }
+    }
+  };
+
+  blocker.onclick = e =&gt; {
+    const a = e.target.closest('[target]') || e.target.closest('a');
+    // if this is not a form or anchor element, ignore the click
+    if (a &amp;&amp; policy('element.click', a, e).block) {
+      blocker.onclick.pointer.apply(e);
+      return true;
+    }
+  };
+  blocker.onclick.pointer = MouseEvent.prototype.preventDefault;
+
+  blocker.install = (w = window) =&gt; {
+    if (script.dataset.enabled === 'false' || protected.has(w)) {
+      return;
+    }
+    const d = w.document;
+    protected.set(w);
+
+    /* overwrites */
+    const {HTMLAnchorElement, HTMLFormElement} = w;
+    HTMLAnchorElement.prototype.click = new Proxy(HTMLAnchorElement.prototype.click, {
+      apply(target, self, args) {
+        const {block} = policy('dynamic.a.click', self);
+        return block ? undefined : Reflect.apply(target, self, args);
+      }
+    });
+    HTMLAnchorElement.prototype.dispatchEvent = new Proxy(HTMLAnchorElement.prototype.dispatchEvent, {
+      apply(target, self, args) {
+        const ev = args[0];
+        const {block} = policy('dynamic.a.dispatch', self, ev);
+        return block ? false : Reflect.apply(target, self, args);
+      }
+    });
+    HTMLFormElement.prototype.submit = new Proxy(HTMLFormElement.prototype.submit, {
+      apply(target, self, args) {
+        const {block} = policy('dynamic.form.submit', self);
+        return block ? false : Reflect.apply(target, self, args);
+      }
+    });
+    HTMLFormElement.prototype.dispatchEvent = new Proxy(HTMLFormElement.prototype.dispatchEvent, {
+      apply(target, self, args) {
+        const {block} = policy('dynamic.form.dispatch', self);
+        return block ? false : Reflect.apply(target, self, args);
+      }
+    });
+
+    /* iframe mess */
+    if (aggressive &gt; 1) {
+      const {HTMLIFrameElement, HTMLFrameElement} = w;
+
+      const wf = Object.getOwnPropertyDescriptor(HTMLFrameElement.prototype, 'contentWindow');
+      Object.defineProperty(HTMLFrameElement.prototype, 'contentWindow', {
+        configurable: true,
+        enumerable: true,
+        get: function() {
+          const w = wf.get.call(this);
+          try {
+            blocker.install(w);
+          }
+          catch (e) {}
+          return w;
+        }
+      });
+      const wif = Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, 'contentWindow');
+      Object.defineProperty(HTMLIFrameElement.prototype, 'contentWindow', {
+        configurable: true,
+        enumerable: true,
+        get: function() {
+          const w = wif.get.call(this);
+          try {
+            blocker.install(w);
+          }
+          catch (e) {}
+          return w;
+        }
+      });
+      const cf = Object.getOwnPropertyDescriptor(HTMLFrameElement.prototype, 'contentDocument');
+      Object.defineProperty(HTMLFrameElement.prototype, 'contentDocument', {
+        configurable: true,
+        enumerable: true,
+        get: function() {
+          const d = cf.get.call(this);
+          try {
+            blocker.install(d.defaultView);
+          }
+          catch (e) {}
+          return d;
+        }
+      });
+      const cif = Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, 'contentDocument');
+      Object.defineProperty(HTMLIFrameElement.prototype, 'contentDocument', {
+        configurable: true,
+        enumerable: true,
+        get: function() {
+          const d = cif.get.call(this);
+          try {
+            blocker.install(d.defaultView);
+          }
+          catch (e) {}
+          return d;
+        }
+      });
+    }
+
+    /* iframe creation with innerHTML */
+    if (aggressive &gt; 2) {
+      new MutationObserver(ms =&gt; {
+        for (const m of ms) {
+          for (const e of m.addedNodes) {
+            blocker.frame(e);
+            if (e.childElementCount) {
+              [...e.querySelectorAll('iframe')].forEach(blocker.frame);
+            }
+          }
+        }
+      }).observe(d, {childList: true, subtree: true});
+    }
+
+    /* click */
+    d.addEventListener('click', blocker.onclick, true); // with capture;
+
+    /* window.open */
+    w.open = new Proxy(w.open, {
+      apply(target, self, args) {
+        const {id, block} = policy('window.open', {
+          href: args.length ? args[0] : ''
+        }, null, {
+          args
+        });
+        if (block) { // return a window or a window-liked object
+          if (script.dataset.shadow === 'true') {
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+            return iframe.contentWindow;
+          }
+          else {
+            return simulate('self', window, id);
+          }
+        }
+        return Reflect.apply(target, self, args);
+      }
+    });
+
+    /* DOM replacement (document.open removes all the DOM listeners) */
+    let dHTML = d.documentElement;
+    d.write = new Proxy(d.write, {
+      apply(target, self, args) {
+        const r = Reflect.apply(target, self, args);
+        if (dHTML !== self.documentElement) {
+          dHTML = self.documentElement;
+          self.addEventListener('click', blocker.onclick, true);
+        }
+        return r;
+      }
+    });
+  };
+  blocker.remove = (w = window, d = document) =&gt; {
+    if (script.dataset.enabled === 'false' &amp;&amp; protected.has(w)) {
+      protected.delete(w);
+      d.removeEventListener('click', blocker.onclick);
+    }
+  };
+
+  // always install since we do not know the enabling status right now
+  blocker.install();
+
+  // receive configure
+  new MutationObserver(() =&gt; {
+    blocker[script.dataset.enabled === 'false' ? 'remove' : 'install']();
+  }).observe(script, {
+    attributes: true,
+    attributeFilter: ['data-enabled']
+  });
+})(3)</script>
+  <script>((aggressive = 3) =&gt; {  const script = document.currentScript;  script.dataset.injected = true;  const post = (name, detail) =&gt; script.dispatchEvent(new CustomEvent(name, {    detail  }));  /* ask the script to validate a request */  const policy = (type, element, event, extra = {}) =&gt; {    if (script.dataset.enabled === 'false') {      return {        block: false      };    }    if (event) {      extra.defaultPrevented = event.defaultPrevented;      extra.metaKey = event.metaKey;      extra.button = event.button || 0;      extra.isTrusted = event.isTrusted;    }    post('policy', {      type,      href: element.action || element.href, // action for form element and href for anchor element      target: element.target,      ...extra    });    return {      id: script.getAttribute('eid'),      block: script.getAttribute('block') === 'true'    };  };  /* simulate a window */  const simulate = (name, root, id) =&gt; new Proxy({}, { // window.location.replace    get(obj, key) {      return typeof root[key] === 'function' ? function(...args) {        post('record', {          id,          name,          method: root[key].name || key, // window.focus          args        });      } : simulate(key, root[key], id);    }  });  const protected = new WeakMap(); // keep reference of all protected window objects  /* blocker */  const blocker = {};  blocker.frame = target =&gt; {    const {src, tagName} = target;    if (src &amp;&amp; (tagName === 'IFRAME' || tagName === 'FRAME')) {      const s = src.toLowerCase();      if (s.startsWith('javascript:') || s.startsWith('data:')) {        try {          blocker.install(target.contentWindow);        }        catch (e) {}      }    }  };  blocker.onclick = e =&gt; {    const a = e.target.closest('[target]') || e.target.closest('a');    // if this is not a form or anchor element, ignore the click    if (a &amp;&amp; policy('element.click', a, e).block) {      blocker.onclick.pointer.apply(e);      return true;    }  };  blocker.onclick.pointer = MouseEvent.prototype.preventDefault;  blocker.install = (w = window) =&gt; {    if (script.dataset.enabled === 'false' || protected.has(w)) {      return;    }    const d = w.document;    protected.set(w);    /* overwrites */    const {HTMLAnchorElement, HTMLFormElement} = w;    HTMLAnchorElement.prototype.click = new Proxy(HTMLAnchorElement.prototype.click, {      apply(target, self, args) {        const {block} = policy('dynamic.a.click', self);        return block ? undefined : Reflect.apply(target, self, args);      }    });    HTMLAnchorElement.prototype.dispatchEvent = new Proxy(HTMLAnchorElement.prototype.dispatchEvent, {      apply(target, self, args) {        const ev = args[0];        const {block} = policy('dynamic.a.dispatch', self, ev);        return block ? false : Reflect.apply(target, self, args);      }    });    HTMLFormElement.prototype.submit = new Proxy(HTMLFormElement.prototype.submit, {      apply(target, self, args) {        const {block} = policy('dynamic.form.submit', self);        return block ? false : Reflect.apply(target, self, args);      }    });    HTMLFormElement.prototype.dispatchEvent = new Proxy(HTMLFormElement.prototype.dispatchEvent, {      apply(target, self, args) {        const {block} = policy('dynamic.form.dispatch', self);        return block ? false : Reflect.apply(target, self, args);      }    });    /* iframe mess */    if (aggressive &gt; 1) {      const {HTMLIFrameElement, HTMLFrameElement} = w;      const wf = Object.getOwnPropertyDescriptor(HTMLFrameElement.prototype, 'contentWindow');      Object.defineProperty(HTMLFrameElement.prototype, 'contentWindow', {        configurable: true,        enumerable: true,        get: function() {          const w = wf.get.call(this);          try {            blocker.install(w);          }          catch (e) {}          return w;        }      });      const wif = Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, 'contentWindow');      Object.defineProperty(HTMLIFrameElement.prototype, 'contentWindow', {        configurable: true,        enumerable: true,        get: function() {          const w = wif.get.call(this);          try {            blocker.install(w);          }          catch (e) {}          return w;        }      });      const cf = Object.getOwnPropertyDescriptor(HTMLFrameElement.prototype, 'contentDocument');      Object.defineProperty(HTMLFrameElement.prototype, 'contentDocument', {        configurable: true,        enumerable: true,        get: function() {          const d = cf.get.call(this);          try {            blocker.install(d.defaultView);          }          catch (e) {}          return d;        }      });      const cif = Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, 'contentDocument');      Object.defineProperty(HTMLIFrameElement.prototype, 'contentDocument', {        configurable: true,        enumerable: true,        get: function() {          const d = cif.get.call(this);          try {            blocker.install(d.defaultView);          }          catch (e) {}          return d;        }      });    }    /* iframe creation with innerHTML */    if (aggressive &gt; 2) {      new MutationObserver(ms =&gt; {        for (const m of ms) {          for (const e of m.addedNodes) {            blocker.frame(e);            if (e.childElementCount) {              [...e.querySelectorAll('iframe')].forEach(blocker.frame);            }          }        }      }).observe(d, {childList: true, subtree: true});    }    /* click */    d.addEventListener('click', blocker.onclick, true); // with capture;    /* window.open */    w.open = new Proxy(w.open, {      apply(target, self, args) {        const {id, block} = policy('window.open', {          href: args.length ? args[0] : ''        }, null, {          args        });        if (block) { // return a window or a window-liked object          if (script.dataset.shadow === 'true') {            const iframe = document.createElement('iframe');            iframe.style.display = 'none';            document.body.appendChild(iframe);            return iframe.contentWindow;          }          else {            return simulate('self', window, id);          }        }        return Reflect.apply(target, self, args);      }    });    /* DOM replacement (document.open removes all the DOM listeners) */    let dHTML = d.documentElement;    d.write = new Proxy(d.write, {      apply(target, self, args) {        const r = Reflect.apply(target, self, args);        if (dHTML !== self.documentElement) {          dHTML = self.documentElement;          self.addEventListener('click', blocker.onclick, true);        }        return r;      }    });  };  blocker.remove = (w = window, d = document) =&gt; {    if (script.dataset.enabled === 'false' &amp;&amp; protected.has(w)) {      protected.delete(w);      d.removeEventListener('click', blocker.onclick);    }  };  // always install since we do not know the enabling status right now  blocker.install();  // receive configure  new MutationObserver(() =&gt; {    blocker[script.dataset.enabled === 'false' ? 'remove' : 'install']();  }).observe(script, {    attributes: true,    attributeFilter: ['data-enabled']  });})(3)</script>
+  <script>((aggressive = 3) =&gt; {  const script = document.currentScript;  script.dataset.injected = true;  const post = (name, detail) =&gt; script.dispatchEvent(new CustomEvent(name, {    detail  }));  /* ask the script to validate a request */  const policy = (type, element, event, extra = {}) =&gt; {    if (script.dataset.enabled === 'false') {      return {        block: false      };    }    if (event) {      extra.defaultPrevented = event.defaultPrevented;      extra.metaKey = event.metaKey;      extra.button = event.button || 0;      extra.isTrusted = event.isTrusted;    }    post('policy', {      type,      href: element.action || element.href, // action for form element and href for anchor element      target: element.target,      ...extra    });    return {      id: script.getAttribute('eid'),      block: script.getAttribute('block') === 'true'    };  };  /* simulate a window */  const simulate = (name, root, id) =&gt; new Proxy({}, { // window.location.replace    get(obj, key) {      return typeof root[key] === 'function' ? function(...args) {        post('record', {          id,          name,          method: root[key].name || key, // window.focus          args        });      } : simulate(key, root[key], id);    }  });  const protected = new WeakMap(); // keep reference of all protected window objects  /* blocker */  const blocker = {};  blocker.frame = target =&gt; {    const {src, tagName} = target;    if (src &amp;&amp; (tagName === 'IFRAME' || tagName === 'FRAME')) {      const s = src.toLowerCase();      if (s.startsWith('javascript:') || s.startsWith('data:')) {        try {          blocker.install(target.contentWindow);        }        catch (e) {}      }    }  };  blocker.onclick = e =&gt; {    const a = e.target.closest('[target]') || e.target.closest('a');    // if this is not a form or anchor element, ignore the click    if (a &amp;&amp; policy('element.click', a, e).block) {      blocker.onclick.pointer.apply(e);      return true;    }  };  blocker.onclick.pointer = MouseEvent.prototype.preventDefault;  blocker.install = (w = window) =&gt; {    if (script.dataset.enabled === 'false' || protected.has(w)) {      return;    }    const d = w.document;    protected.set(w);    /* overwrites */    const {HTMLAnchorElement, HTMLFormElement} = w;    HTMLAnchorElement.prototype.click = new Proxy(HTMLAnchorElement.prototype.click, {      apply(target, self, args) {        const {block} = policy('dynamic.a.click', self);        return block ? undefined : Reflect.apply(target, self, args);      }    });    HTMLAnchorElement.prototype.dispatchEvent = new Proxy(HTMLAnchorElement.prototype.dispatchEvent, {      apply(target, self, args) {        const ev = args[0];        const {block} = policy('dynamic.a.dispatch', self, ev);        return block ? false : Reflect.apply(target, self, args);      }    });    HTMLFormElement.prototype.submit = new Proxy(HTMLFormElement.prototype.submit, {      apply(target, self, args) {        const {block} = policy('dynamic.form.submit', self);        return block ? false : Reflect.apply(target, self, args);      }    });    HTMLFormElement.prototype.dispatchEvent = new Proxy(HTMLFormElement.prototype.dispatchEvent, {      apply(target, self, args) {        const {block} = policy('dynamic.form.dispatch', self);        return block ? false : Reflect.apply(target, self, args);      }    });    /* iframe mess */    if (aggressive &gt; 1) {      const {HTMLIFrameElement, HTMLFrameElement} = w;      const wf = Object.getOwnPropertyDescriptor(HTMLFrameElement.prototype, 'contentWindow');      Object.defineProperty(HTMLFrameElement.prototype, 'contentWindow', {        configurable: true,        enumerable: true,        get: function() {          const w = wf.get.call(this);          try {            blocker.install(w);          }          catch (e) {}          return w;        }      });      const wif = Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, 'contentWindow');      Object.defineProperty(HTMLIFrameElement.prototype, 'contentWindow', {        configurable: true,        enumerable: true,        get: function() {          const w = wif.get.call(this);          try {            blocker.install(w);          }          catch (e) {}          return w;        }      });      const cf = Object.getOwnPropertyDescriptor(HTMLFrameElement.prototype, 'contentDocument');      Object.defineProperty(HTMLFrameElement.prototype, 'contentDocument', {        configurable: true,        enumerable: true,        get: function() {          const d = cf.get.call(this);          try {            blocker.install(d.defaultView);          }          catch (e) {}          return d;        }      });      const cif = Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, 'contentDocument');      Object.defineProperty(HTMLIFrameElement.prototype, 'contentDocument', {        configurable: true,        enumerable: true,        get: function() {          const d = cif.get.call(this);          try {            blocker.install(d.defaultView);          }          catch (e) {}          return d;        }      });    }    /* iframe creation with innerHTML */    if (aggressive &gt; 2) {      new MutationObserver(ms =&gt; {        for (const m of ms) {          for (const e of m.addedNodes) {            blocker.frame(e);            if (e.childElementCount) {              [...e.querySelectorAll('iframe')].forEach(blocker.frame);            }          }        }      }).observe(d, {childList: true, subtree: true});    }    /* click */    d.addEventListener('click', blocker.onclick, true); // with capture;    /* window.open */    w.open = new Proxy(w.open, {      apply(target, self, args) {        const {id, block} = policy('window.open', {          href: args.length ? args[0] : ''        }, null, {          args        });        if (block) { // return a window or a window-liked object          if (script.dataset.shadow === 'true') {            const iframe = document.createElement('iframe');            iframe.style.display = 'none';            document.body.appendChild(iframe);            return iframe.contentWindow;          }          else {            return simulate('self', window, id);          }        }        return Reflect.apply(target, self, args);      }    });    /* DOM replacement (document.open removes all the DOM listeners) */    let dHTML = d.documentElement;    d.write = new Proxy(d.write, {      apply(target, self, args) {        const r = Reflect.apply(target, self, args);        if (dHTML !== self.documentElement) {          dHTML = self.documentElement;          self.addEventListener('click', blocker.onclick, true);        }        return r;      }    });  };  blocker.remove = (w = window, d = document) =&gt; {    if (script.dataset.enabled === 'false' &amp;&amp; protected.has(w)) {      protected.delete(w);      d.removeEventListener('click', blocker.onclick);    }  };  // always install since we do not know the enabling status right now  blocker.install();  // receive configure  new MutationObserver(() =&gt; {    blocker[script.dataset.enabled === 'false' ? 'remove' : 'install']();  }).observe(script, {    attributes: true,    attributeFilter: ['data-enabled']  });})(3)</script>
+  <g>
+    <path class="st0" d="M 527 220.49 L 531.08 220.49 L 531.08 225.46 C 531.08 226.57 533.86 226.61 534.49 226.61 C 535.12 226.61 538.65 226.57 538.65 225.16 L 538.65 214 L 553.8 214 C 556.51 214 557 217.87 557 218.86 C 557 219.81 556.55 224.06 554.03 224.06 L 552.45 224.06 L 557 229.79 L 551.89 229.79 L 544.49 220.5 L 552.17 220.5 C 553.06 220.5 553.1 219.28 553.1 219.02 C 553.1 218.76 553.06 217.68 552.21 217.68 L 542.67 217.68 L 542.67 225.92 C 542.67 229.56 536.95 230.26 534.8 230.26 C 531.83 230.26 527 229.26 527 226.18 L 527 220.49" style="fill: rgb(10, 140, 13); stroke: rgb(255, 255, 255); stroke-width: 1.5px; stroke-linecap: square;"/>
+    <path class="st0" d="M 527 220.49 L 531.08 220.49 L 531.08 225.46 C 531.08 226.57 533.86 226.61 534.49 226.61 C 535.12 226.61 538.65 226.57 538.65 225.16 L 538.65 214 L 553.8 214 C 556.51 214 557 217.87 557 218.86 C 557 219.81 556.55 224.06 554.03 224.06 L 552.45 224.06 L 557 229.79 L 551.89 229.79 L 544.49 220.5 L 552.17 220.5 C 553.06 220.5 553.1 219.28 553.1 219.02 C 553.1 218.76 553.06 217.68 552.21 217.68 L 542.67 217.68 L 542.67 225.92 C 542.67 229.56 536.95 230.26 534.8 230.26 C 531.83 230.26 527 229.26 527 226.18 L 527 220.49" style="fill: rgb(10, 140, 13);"/>
+  </g>
+</svg>
