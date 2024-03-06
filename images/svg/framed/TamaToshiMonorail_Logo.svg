@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="0 0 55.57 68" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="gradient-2" spreadMethod="pad" gradientTransform="matrix(18.823736, 11.391646, 18.092091, -29.871241, 26.441067, 31.314884)" gradientUnits="userSpaceOnUse" r="1" cy="0" cx="0">
+      <stop id="stop-5" offset="0" style="stop-opacity:1;stop-color:#ffffff"/>
+      <stop id="stop-6" offset="0.45" style="stop-opacity:1;stop-color:#ffdf00"/>
+      <stop id="stop-7" offset="0.94" style="stop-opacity:1;stop-color:#ed6c00"/>
+      <stop id="stop-8" offset="1" style="stop-opacity:1;stop-color:#ed6c00"/>
+    </radialGradient>
+    <radialGradient id="gradient-1" spreadMethod="pad" gradientTransform="matrix(18.822908, 11.391145, 18.091295, -29.869927, 28.069901, 33.313507)" gradientUnits="userSpaceOnUse" r="1" cy="0" cx="0">
+      <stop id="stop-1" offset="0" style="stop-opacity:1;stop-color:#ffffff"/>
+      <stop id="stop-2" offset="0.45" style="stop-opacity:1;stop-color:#ffdf00"/>
+      <stop id="stop-3" offset="0.94" style="stop-opacity:1;stop-color:#ed6c00"/>
+      <stop id="stop-4" offset="1" style="stop-opacity:1;stop-color:#ed6c00"/>
+    </radialGradient>
+  </defs>
+  <path id="path-1" style="fill: rgb(255, 255, 255); fill-opacity: 1; fill-rule: nonzero; stroke-width: 3px; stroke: rgb(255, 255, 255);" d="M 46.66 45.5 C 36.62 62 20 70.2 9.58 63.85 C -0.84 57.49 -1.16 38.97 8.9 22.48 C 18.95 6 35.56 -2.21 46 4.15 C 56.41 10.51 56.71 29.02 46.66 45.5"/>
+  <path id="path-2" style="fill: rgb(237, 108, 0); fill-opacity: 1; fill-rule: nonzero; stroke-width: 3px; stroke: rgb(255, 255, 255);" d="M 30.1 34.16 C 16.45 33.57 4.89 37.36 2.65 38.14 C 1.99 41.17 1.63 44.26 1.63 47.39 C 1.63 60.96 10.75 66 17.34 66 C 29.21 66 43.88 53.76 50.45 38.01 C 45.94 36.51 38.57 34.52 30.1 34.16"/>
+  <path id="path-3" style="fill: url('#gradient-1'); stroke-width: 3px; stroke: rgb(255, 255, 255);" d="M 9.03 22.57 C 7.21 25.57 5.74 28.64 4.59 31.7 C 8.61 30.41 18.85 27.66 30.62 28.17 C 40 28.58 48 31.11 52.25 32.72 C 55.83 20.31 53.69 8.81 45.92 4.1 C 43.56 2.67 40.88 2 38.04 2 C 28.36 1.99 16.74 9.83 9.03 22.57"/>
+  <g transform="matrix(0.999956, 0, 0, 0.999956, 1.629997, 2)">
+    <path id="path-4" style="fill: rgb(255, 255, 255); fill-opacity: 1; fill-rule: nonzero;" d="M 45.03 43.5 C 34.99 60 18.37 68.2 7.95 61.85 C -2.47 55.49 -2.79 36.97 7.27 20.48 C 17.32 4 33.93 -4.21 44.37 2.15 C 54.78 8.51 55.08 27.02 45.03 43.5"/>
+    <path id="path-5" style="fill: rgb(237, 108, 0); fill-opacity: 1; fill-rule: nonzero; stroke-width: 4px;" d="M 28.47 32.16 C 14.82 31.57 3.26 35.36 1.02 36.14 C 0.36 39.17 0 42.26 0 45.39 C 0 58.96 9.12 64 15.71 64 C 27.58 64 42.25 51.76 48.82 36.01 C 44.31 34.51 36.94 32.52 28.47 32.16"/>
+    <path id="path-6" style="stroke-width: 4px; fill: url('#gradient-2');" d="M 7.4 20.57 C 5.58 23.57 4.11 26.64 2.96 29.7 C 6.98 28.41 17.22 25.66 28.99 26.17 C 38.37 26.58 46.37 29.11 50.62 30.72 C 54.2 18.31 52.06 6.81 44.29 2.1 C 41.93 0.67 39.25 0 36.41 0 C 26.73 -0.01 15.11 7.83 7.4 20.57"/>
+  </g>
+</svg>
