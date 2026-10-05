@@ -1,0 +1,47 @@
+episode: 94
+
+page: 1
+
+panels:
+
+  - panel: 1
+    dialogue:
+      - speaker: "S"
+        text: "우후후."
+
+  - panel: 2
+    dialogue:
+    sound_effects:
+      - "콩콩"
+
+  - panel: 3
+    dialogue:
+      - speaker: "S"
+        text: "담배를 잔뜩 먹은 손가락 냄새..."
+      - speaker: "S"
+        text: "이 구수한 향은 역시 참을 수 없어~"
+    sound_effects:
+      - "하아..."
+
+  - panel: 4
+    dialogue:
+      - speaker: "S"
+        text: "어머나, 재떨이가..."
+      - speaker: "S"
+        text: "꽁초가 수북해서 필터가 타고 있네~."
+
+  - panel: 5
+    dialogue:
+      - speaker: "S"
+        text: "하아아."
+      - speaker: "S"
+        text: "이 군고구마 같은 냄새도 좋아~."
+
+  - panel: 6
+    dialogue:
+      - speaker: "Y"
+        text: "걍 피워라냐."
+      - speaker: "S"
+        text: "안 돼~."
+      - speaker: "S"
+        text: "조금만 더 참으면 금연 신기록 달성인걸~."
