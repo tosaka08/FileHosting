@@ -1,0 +1,39 @@
+episode: 142
+
+page: 1
+
+panels:
+
+  - page: 1
+    dialogue:
+      - speaker: "Penpen"
+        text: "뭐 해. 야쿠 씨…?"
+
+      - speaker: "Yaku"
+        text: "아, 그게~ 좀…."
+
+      - speaker: "Rani"
+        text: "마을에 와서 어렵게 손에 넣은 내 인형이 사라졌구나~."
+        sound effect: "흑 흑"
+
+      - speaker: "Penpen"
+        text: "저런..."
+
+      - speaker: "Yaku"
+        text: "족장님, 새 거 시드릴 게요."
+
+      - speaker: "Rani"
+        text: "싫다, 싫어~!"
+        text: "냐무냐무 인형은 한정품에 마지막 하나 남은 거였단 말이다~!"
+
+      - speaker: "Rani"
+        text: "그게 아니면 싫어~..."
+
+      - speaker: "Yaku"
+        text: "족장님, 이럴 뗀 끈질기서네요~."
+
+      - speaker: "Rani"
+       text: "무슨 뜻이야~. 무엄 하구나."
+
+      - speaker: "Yaku"
+       text: "죄, 죄송해여..."
