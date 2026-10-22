@@ -7,13 +7,13 @@ panels:
   - panel: 1
     dialogue:
       - speaker: "Shizue"
-        text: "아~ 드디어 피울 수 있네~← 흡연 가능한 가게가 적어서 큰일이야~."
+        text: "아~ 드디어 피울 수 있네~← {흡연} 가능한 가게가 적어서 {큰일}이야~."
       - sound effect: "딸깍"
       - speaker: "man"
-        text: "죄송합니다 손님..."
+        text: "{죄송합니다} 손님..."
 
   - panel: 2
     dialogue:
        - speaker: "man"
         text: "저희 가게는 전자담배만 가능해서..."
-        test: "죄송하지만 종이 담배는..."
+        test: "죄송하지만 종이 {담배}는..."
